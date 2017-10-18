@@ -1,0 +1,215 @@
+﻿using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+using System.Xml.Linq;
+using System;
+using System.IO;
+
+public class QualityManager : MonoBehaviour
+{
+    public Dropdown[] UIValueGetter;
+    public Text userNamePlaceHolder;
+    public Text userName;
+    public Toggle scoreCap;
+
+    private int vsync = 0;
+    private int textureRes = 0;
+    private int anisotropicFiltering = 0;
+    private int antiAliasing = 0;
+
+    // Start is called just before any of the Update methods is called the first time
+    public void Start()
+    {
+        userNamePlaceHolder.text = VariableManager.UserName;
+        scoreCap.isOn = VariableManager.ScoreCapToggle;
+
+        if (VariableManager.IsWindows)
+        {
+            if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+            "\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml"))
+            {
+                XDocument document = XDocument.Load(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+                    "\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml");
+                XElement element = document.Element("qualitySettings").Element("quality");
+
+                UIValueGetter[0].value = Convert.ToInt32(element.Element("vsync").Value);
+                UIValueGetter[1].value = Convert.ToInt32(element.Element("anisotropicFiltering").Value);
+                UIValueGetter[2].value = Convert.ToInt32(element.Element("textureRes").Value);
+
+                switch (Convert.ToInt32(element.Element("antiAliasing").Value))
+                {
+                    case 8:
+                        UIValueGetter[3].value = 0;
+                        break;
+                    case 4:
+                        UIValueGetter[3].value = 1;
+                        break;
+                    case 2:
+                        UIValueGetter[3].value = 2;
+                        break;
+                    case 0:
+                        UIValueGetter[3].value = 3;
+                        break;
+                }
+            }
+        }
+        else
+        {
+            if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Personal) +
+        "\\Library\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml"))
+            {
+                XDocument document = XDocument.Load(Environment.GetFolderPath(Environment.SpecialFolder.Personal) +
+                    "\\Library\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml");
+                XElement element = document.Element("qualitySettings").Element("quality");
+
+                UIValueGetter[0].value = Convert.ToInt32(element.Element("vsync").Value);
+                UIValueGetter[1].value = Convert.ToInt32(element.Element("anisotropicFiltering").Value);
+                UIValueGetter[2].value = Convert.ToInt32(element.Element("textureRes").Value);
+
+                switch (Convert.ToInt32(element.Element("antiAliasing").Value))
+                {
+                    case 8:
+                        UIValueGetter[3].value = 0;
+                        break;
+                    case 4:
+                        UIValueGetter[3].value = 1;
+                        break;
+                    case 2:
+                        UIValueGetter[3].value = 2;
+                        break;
+                    case 0:
+                        UIValueGetter[3].value = 3;
+                        break;
+                }
+            }
+        }
+    }
+
+
+    // Update is called every frame, if the MonoBehaviour is enabled
+    public void Update()
+    {
+        vsync = UIValueGetter[0].value;
+        anisotropicFiltering = UIValueGetter[1].value;
+        textureRes = UIValueGetter[2].value;
+        antiAliasing = UIValueGetter[3].value;
+    }
+
+    public void setQuality()
+    {
+        QualitySettings.vSyncCount = vsync;
+
+        switch (anisotropicFiltering)
+        {
+            case 0:
+                QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+                break;
+            case 1:
+                QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
+                break;
+            case 2:
+                QualitySettings.anisotropicFiltering = AnisotropicFiltering.Disable;
+                break;
+        }
+
+        QualitySettings.masterTextureLimit = textureRes;
+
+        switch (antiAliasing)
+        {
+            case 0:
+                QualitySettings.antiAliasing = 8;
+                break;
+            case 1:
+                QualitySettings.antiAliasing = 4;
+                break;
+            case 2:
+                QualitySettings.antiAliasing = 2;
+                break;
+            case 3:
+                QualitySettings.antiAliasing = 0;
+                break;
+        }
+
+        if (VariableManager.IsWindows)
+        {
+            XDocument document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement("qualitySettings",
+                new XComment("DO NOT EDIT THIS FILE UNLESS ISSUES OCCUR IN THE SETTINGS OF THE GAME!"),
+                new XComment("Setting for the graphics of the game."),
+                new XElement("quality",
+                new XElement("vsync", QualitySettings.vSyncCount),
+                new XElement("textureRes", QualitySettings.masterTextureLimit),
+                new XElement("anisotropicFiltering", anisotropicFiltering),
+                new XElement("antiAliasing", QualitySettings.antiAliasing)),
+                new XComment("End of Class")));
+            document.Save(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+                "\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml");
+
+            switch (userName.text)
+            {
+                case "":
+                    VariableManager.UserName = userNamePlaceHolder.text;
+                    break;
+                default:
+                    VariableManager.UserName = userName.text;
+                    break;
+            }
+
+            VariableManager.ScoreCapToggle = scoreCap.isOn;
+
+            XDocument userDocument = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement("userSettings",
+                new XComment("DO NOT EDIT THIS FILE UNLESS ISSUES OCCUR IN THE SETTINGS OF THE GAME!"),
+                new XComment("Setting for the profile or user of the game."),
+                new XElement("profile",
+                new XElement("name", VariableManager.UserName),
+                new XElement("scoreCap", VariableManager.ScoreCapToggle)),
+                new XComment("End of Class")));
+            userDocument.Save(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) +
+                "\\SpaceWarDefender\\SaveData\\UserSettings.xml");
+        }
+        else
+        {
+            XDocument document = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement("qualitySettings",
+                new XComment("DO NOT EDIT THIS FILE UNLESS ISSUES OCCUR IN THE SETTINGS OF THE GAME!"),
+                new XComment("Setting for the graphics of the game."),
+                new XElement("quality",
+                new XElement("vsync", QualitySettings.vSyncCount),
+                new XElement("textureRes", QualitySettings.masterTextureLimit),
+                new XElement("anisotropicFiltering", anisotropicFiltering),
+                new XElement("antiAliasing", QualitySettings.antiAliasing)),
+                new XComment("End of Class")));
+            document.Save(Environment.GetFolderPath(Environment.SpecialFolder.Personal) +
+                "\\Library\\SpaceWarDefender\\SaveData\\GraphicsSettings.xml");
+
+            switch (userName.text)
+            {
+                case "":
+                    VariableManager.UserName = userNamePlaceHolder.text;
+                    break;
+                default:
+                    VariableManager.UserName = userName.text;
+                    break;
+            }
+
+            VariableManager.ScoreCapToggle = scoreCap.isOn;
+
+            XDocument userDocument = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),
+                new XElement("userSettings",
+                new XComment("DO NOT EDIT THIS FILE UNLESS ISSUES OCCUR IN THE SETTINGS OF THE GAME!"),
+                new XComment("Setting for the profile or user of the game."),
+                new XElement("profile",
+                new XElement("name", VariableManager.UserName),
+                new XElement("scoreCap", VariableManager.ScoreCapToggle)),
+                new XComment("End of Class")));
+            userDocument.Save(Environment.GetFolderPath(Environment.SpecialFolder.Personal) +
+                "\\Library\\SpaceWarDefender\\SaveData\\UserSettings.xml");
+        }
+    }
+
+    public void toMenu()
+    {
+        Application.LoadLevel(0);
+    }
+}
